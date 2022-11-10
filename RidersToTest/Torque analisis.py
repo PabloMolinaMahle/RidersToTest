@@ -13,6 +13,9 @@ import csv
 class RawDataMessage:
     time: float
     torque: float
+    deltaTime: float
+    pendient: float
+    
             
 class Main():
     def run(self):
@@ -24,10 +27,63 @@ class Main():
         # for item in data:
             # print("Time: " + str(item.time) + " Torque: " + str(item.torque))
         
-        # Save data
+        # Calculate delta time
+        self.CalculateDeltaTime(data)
+        
+        # Calculate pendient
+        self.CalculatePendient(data)
+        
+        # Export data
+        self.ExportToStimulus(data)
+    
+            
+    def ExportToStimulus(self, data):
+        
         f = open('export.csv', 'w', newline='')
         writer = csv.writer(f, delimiter =';')
         
+        headder = ["time", "Wbielas", "Tbielas", "modulation" , "Speed", "Voltaje", "c","extra"]
+        writer.writerow(headder)
+        
+        for item in data:
+            row = [str(item.deltaTime), 0.0, str(item.torque), 0.0, 0.0, 0.0, 0.0]
+            writer.writerow(row)
+           
+        f.close()
+    
+    
+    def ExportToCsvBasic(self, data):
+        
+        f = open('export.csv', 'w', newline='')
+        writer = csv.writer(f, delimiter =';')
+        
+        headder = ["Time", "Torque", "DeltaTime", "Pendient"]
+        writer.writerow(headder)
+        
+        for item in data:
+            row = [str(item.time).replace(".", ","), str(item.torque).replace(".", ","), str(item.deltaTime).replace(".", ","), str(item.pendient).replace(".", ",")]
+            writer.writerow(row)
+           
+        f.close()
+    
+    def CalculateDeltaTime(self, data):
+        
+        firstElement = True
+        currTimeDelta = 0.0
+        prevTime = 0.0
+        
+        for item in data:
+            if firstElement:
+                currTimeDelta = 0.0
+                firstElement = False
+                prevTime = float(item.time)
+            else:
+                currTimeDelta = float(item.time)-float(prevTime)
+                prevTime = float(item.time)
+                
+            item.deltaTime = currTimeDelta
+        
+    def CalculatePendient(self, data):
         prevTime = 0.0
         prevTorque = 0.0
         firstElement = True
@@ -39,13 +95,12 @@ class Main():
                 firstElement = False
             else:
                 tempDelta = (float(item.torque)-float(prevTorque))/(float(item.time)-float(prevTime))
-                print("dT= " + str(float(item.torque)-float(prevTorque)) + " dt= " + str(float(item.time)-float(prevTime)) + " dT/dt= " + str(tempDelta))
-            row = [str(item.time).replace(".", ","), str(item.torque).replace(".", ","), str(tempDelta).replace(".", ",")]
-            writer.writerow(row)
+                # print("dT= " + str(float(item.torque)-float(prevTorque)) + " dt= " + str(float(item.time)-float(prevTime)) + " dT/dt= " + str(tempDelta))
+            
+            item.pendient = tempDelta
+            
             prevTime = item.time
             prevTorque = item.torque
-            
-        f.close()
     
     def ReadData(self):
 
